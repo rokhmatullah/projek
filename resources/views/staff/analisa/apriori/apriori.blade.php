@@ -224,6 +224,28 @@
                     </div>
                 </div>
             </div>{{-- /.Confidence --}}
+            <div class="col-12 col-xl-6">{{-- Penempatan --}}
+                <div class="card shadow">
+                    <div class="card-header bg-success">
+                        <h5 class="card-title">Penempatan Barang</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="callout callout-warning mx-2 d-none" id="alert-penempatanBarang">
+                            <h5>Not Enough Data</h5>
+                            <p>Sorry, the data needed is not enough.</p>
+                        </div>
+
+                        <table class="table table-striped table-responsive-sm table-hover table-bordered" id="penempatanBarang">
+                            <thead>
+                                <tr class="bg-primary">
+                                    <th>No Penempatan</th>
+                                    <th>Barang</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>{{-- /.Penempatan --}}
         </div>
     </div>
 </div>
@@ -809,6 +831,35 @@
                 cell.innerHTML = i+1;
             } );
         }).draw();
+
+        var tPenempatan = $("#penempatanBarang").DataTable({
+            responsive: true,
+            processing: true,
+            autoWidth: true,
+            ajax: {
+                method: "POST",
+                data: function(d){
+                    var tgl_mulai = $("#input-tanggal_mulai").val();
+                    var tgl_akhir = $("#input-tanggal_akhir").val();
+                    var min_supp = $("#input-min_support").val();
+                    var min_confidence = $("#input-min_confidence").val();
+                    var reqData = { tanggal_mulai: tgl_mulai, tanggal_akhir: tgl_akhir, min_support: min_supp, min_conf: min_confidence };
+                    return reqData;
+                },
+                url: "{{ url('penjualan/apriori/penempatan') }}",
+            },
+            columns: [
+                {
+                    data: 'level',
+                    render: function (data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                { data: 'barang' },
+            ],
+            pageLength: 5,
+            aLengthMenu:[5,10,15,25,50],
+        });
 
         //Linked 2 datetimepicker
         $("#input-tanggal_mulai").on("change.datetimepicker", function (e) {

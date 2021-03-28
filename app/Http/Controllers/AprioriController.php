@@ -769,4 +769,392 @@ class AprioriController extends Controller
         // return response()->json($result);
         return datatables()->of($result)->toJson();
     }
+
+    public function processBarangApriori(Request $request)
+    {
+        $apr_two = array();
+        $apr_three = array();
+        $tp = 0; $tn = 0; $fp = 0; $fn = 0;
+
+        $data_barang = $this->getBarang($request->tanggal_mulai, $request->tanggal_akhir);
+        // $data_barang = $this->getBarang('2018-12-01 00:00:00', '2018-12-09 23:59:59'); // Data Demo
+        $data_belian = $this->getTransactionItem($request->tanggal_mulai, $request->tanggal_akhir);
+        // $data_belian = $this->getTransactionItem('2018-12-01 00:00:00', '2018-12-09 23:59:59'); // Data Demo
+        $barang = $this->getBarangWithSupport($data_barang, $request->min_support);
+        // $barang = $this->getBarangWithSupport($data_barang, '50'); // Data Demo
+        $belian = $this->getItemBelian($data_belian);
+
+        $total_transaksi = 0;
+
+        /**
+         * Get Total Transaksi
+         */
+        foreach($belian as $b){
+            $total_transaksi++;
+        }
+
+        $twoitemset = $this->createTwoItemSet($barang, $belian);
+        if($twoitemset != 0){
+            foreach($twoitemset as $k => $item){
+                $arr[] = explode(' - ', $item['item']);
+
+                //Get Support
+                foreach($data_barang as $barang){
+                    if($barang->barang_nama == $arr[$k][0]){
+                        $support_x = ($barang->jumlah / $barang->total) * 100;
+                    }
+                }
+                $support_xuy = $item['support'];
+                if($support_x == 0){ //Handle Division by Zero Exception
+                    $nilai_conf = 0;
+                } else {
+                    $nilai_conf = round(($support_xuy / $support_x) * 100, 2);
+                }
+                //Confusion Matrix
+                if(($support_xuy >= $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $tp++;
+                } else if(($support_xuy >= $request->min_support) && ($nilai_conf < $request->min_conf)){
+                    $fn++;
+                } else if(($support_xuy < $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $fp++;
+                } else {
+                    $tn++;
+                }
+                $one = array(
+                    "item" => $arr[$k][0]." => ".$arr[$k][1],
+                    "support_x" => $support_x,
+                    "support_xuy" => $support_xuy,
+                    "conf" => $nilai_conf,
+                );
+                array_push($apr_two, $one);
+                $one = array();
+
+                //Get Support
+                foreach($data_barang as $barang){
+                    if($barang->barang_nama == $arr[$k][1]){
+                        $support_x = ($barang->jumlah / $barang->total) * 100;
+                    }
+                }
+                $support_xuy = $item['support'];
+                if($support_x == 0){ //Handle Division by Zero Exception
+                    $nilai_conf = 0;
+                } else {
+                    $nilai_conf = round(($support_xuy / $support_x) * 100, 2);
+                }
+                //Confusion Matrix
+                if(($support_xuy >= $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $tp++;
+                } else if(($support_xuy >= $request->min_support) && ($nilai_conf < $request->min_conf)){
+                    $fn++;
+                } else if(($support_xuy < $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $fp++;
+                } else {
+                    $tn++;
+                }
+                $two = array(
+                    "item" => $arr[$k][1]." => ".$arr[$k][0],
+                    "support_x" => $support_x,
+                    "support_xuy" => $support_xuy,
+                    "conf" => $nilai_conf,
+                );
+                array_push($apr_two, $two);
+                $two = array();
+            }
+        } else {
+            $apr_two = [];
+        }
+
+
+        /*
+        Get three set aprior
+        */
+
+        $total_transaksi = 0;
+
+        /**
+         * Get Total Transaksi
+         */
+        foreach($belian as $b){
+            $total_transaksi++;
+        }
+
+        $data_barang = $this->getBarang($request->tanggal_mulai, $request->tanggal_akhir);
+        // $data_barang = $this->getBarang('2018-12-01 00:00:00', '2018-12-09 23:59:59'); // Data Demo
+        $data_belian = $this->getTransactionItem($request->tanggal_mulai, $request->tanggal_akhir);
+        // $data_belian = $this->getTransactionItem('2018-12-01 00:00:00', '2018-12-09 23:59:59'); // Data Demo
+        $barang = $this->getBarangWithSupport($data_barang, $request->min_support);
+        // $barang = $this->getBarangWithSupport($data_barang, '50'); // Data Demo
+        $belian = $this->getItemBelian($data_belian);
+
+        $threeitemset = $this->createThreeItemSet($barang, $belian, $request->min_support);
+        // $threeitemset = $this->createThreeItemSet($barang, $belian, '30');
+        $arr = [];
+        if($threeitemset != 0){
+            foreach($threeitemset as $k => $item){
+                $arr[] = explode(' - ', $item['item']);
+                //0,1 => 2
+                foreach($twoitemset as $bar){
+                    if($bar['item'] == $arr[$k][0]." - ".$arr[$k][1]){
+                        $support_x = ($bar['jumlah'] / $bar['total']) * 100;
+                    }
+                }
+                $support_xuy = $item['support'];
+                if($support_x == 0){ //Handle Division by Zero Exception
+                    $nilai_conf = 0;
+                } else {
+                    $nilai_conf = round(($support_xuy / $support_x) * 100, 2);
+                }
+                //Confusion Matrix
+                if(($support_xuy >= $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $tp++;
+                } else if(($support_xuy >= $request->min_support) && ($nilai_conf < $request->min_conf)){
+                    $fn++;
+                } else if(($support_xuy < $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $fp++;
+                } else {
+                    $tn++;
+                }
+                $array = array(
+                    "item" => $arr[$k][0]." - ".$arr[$k][1]." => ".$arr[$k][2],
+                    "support_x" => $support_x,
+                    "support_xuy" => $support_xuy,
+                    "conf" => $nilai_conf,
+                );
+                array_push($apr_three, $array);
+                $array = array();
+
+                //2 => 0,1
+                foreach($data_barang as $barang){
+                    if($barang->barang_nama == $arr[$k][2]){
+                        $support_x = ($barang->jumlah / $barang->total) * 100;
+                    }
+                }
+                $support_xuy = $item['support'];
+                if($support_x == 0){ //Handle Division by Zero Exception
+                    $nilai_conf = 0;
+                } else {
+                    $nilai_conf = round(($support_xuy / $support_x) * 100, 2);
+                }
+                //Confusion Matrix
+                if(($support_xuy >= $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $tp++;
+                } else if(($support_xuy >= $request->min_support) && ($nilai_conf < $request->min_conf)){
+                    $fn++;
+                } else if(($support_xuy < $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $fp++;
+                } else {
+                    $tn++;
+                }
+                $array = array(
+                    "item" => $arr[$k][2]." => ".$arr[$k][0]." - ".$arr[$k][1],
+                    "support_x" => $support_x,
+                    "support_xuy" => $support_xuy,
+                    "conf" => $nilai_conf,
+                );
+                array_push($apr_three, $array);
+                $array = array();
+
+                //0,2 => 1
+                foreach($twoitemset as $bar){
+                    if($bar['item'] == $arr[$k][0]." - ".$arr[$k][2]){
+                        $support_x = ($bar['jumlah'] / $bar['total']) * 100;
+                    }
+                }
+                $support_xuy = $item['support'];
+                if($support_x == 0){ //Handle Division by Zero Exception
+                    $nilai_conf = 0;
+                } else {
+                    $nilai_conf = round(($support_xuy / $support_x) * 100, 2);
+                }
+                //Confusion Matrix
+                if(($support_xuy >= $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $tp++;
+                } else if(($support_xuy >= $request->min_support) && ($nilai_conf < $request->min_conf)){
+                    $fn++;
+                } else if(($support_xuy < $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $fp++;
+                } else {
+                    $tn++;
+                }
+                $array = array(
+                    "item" => $arr[$k][0]." - ".$arr[$k][2]." => ".$arr[$k][1],
+                    "support_x" => $support_x,
+                    "support_xuy" => $support_xuy,
+                    "conf" => $nilai_conf,
+                );
+                array_push($apr_three, $array);
+                $array = array();
+
+                //1 => 0,2
+                foreach($data_barang as $barang){
+                    if($barang->barang_nama == $arr[$k][1]){
+                        $support_x = ($barang->jumlah / $barang->total) * 100;
+                    }
+                }
+                $support_xuy = $item['support'];
+                if($support_x == 0){ //Handle Division by Zero Exception
+                    $nilai_conf = 0;
+                } else {
+                    $nilai_conf = round(($support_xuy / $support_x) * 100, 2);
+                }
+                //Confusion Matrix
+                if(($support_xuy >= $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $tp++;
+                } else if(($support_xuy >= $request->min_support) && ($nilai_conf < $request->min_conf)){
+                    $fn++;
+                } else if(($support_xuy < $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $fp++;
+                } else {
+                    $tn++;
+                }
+                $array = array(
+                    "item" => $arr[$k][1]." => ".$arr[$k][0]." - ".$arr[$k][2],
+                    "support_x" => $support_x,
+                    "support_xuy" => $support_xuy,
+                    "conf" => $nilai_conf,
+                );
+                array_push($apr_three, $array);
+                $array = array();
+
+                //1,2 => 0
+                foreach($twoitemset as $bar){
+                    if($bar['item'] == $arr[$k][1]." - ".$arr[$k][2]){
+                        $support_x = ($bar['jumlah'] / $bar['total']) * 100;
+                    }
+                }
+                $support_xuy = $item['support'];
+                if($support_x == 0){ //Handle Division by Zero Exception
+                    $nilai_conf = 0;
+                } else {
+                    $nilai_conf = round(($support_xuy / $support_x) * 100, 2);
+                }
+                //Confusion Matrix
+                if(($support_xuy >= $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $tp++;
+                } else if(($support_xuy >= $request->min_support) && ($nilai_conf < $request->min_conf)){
+                    $fn++;
+                } else if(($support_xuy < $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $fp++;
+                } else {
+                    $tn++;
+                }
+                $array = array(
+                    "item" => $arr[$k][1]." - ".$arr[$k][2]." => ".$arr[$k][0],
+                    "support_x" => $support_x,
+                    "support_xuy" => $support_xuy,
+                    "conf" => $nilai_conf,
+                );
+                array_push($apr_three, $array);
+                $array = array();
+
+                //0 => 1,2
+                foreach($data_barang as $barang){
+                    if($barang->barang_nama == $arr[$k][0]){
+                        $support_x = ($barang->jumlah / $barang->total) * 100;
+                    }
+                }
+                $support_xuy = $item['support'];
+                if($support_x == 0){ //Handle Division by Zero Exception
+                    $nilai_conf = 0;
+                } else {
+                    $nilai_conf = round(($support_xuy / $support_x) * 100, 2);
+                }
+                //Confusion Matrix
+                if(($support_xuy >= $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $tp++;
+                } else if(($support_xuy >= $request->min_support) && ($nilai_conf < $request->min_conf)){
+                    $fn++;
+                } else if(($support_xuy < $request->min_support) && ($nilai_conf >= $request->min_conf)){
+                    $fp++;
+                } else {
+                    $tn++;
+                }
+                $array = array(
+                    "item" => $arr[$k][0]." => ".$arr[$k][1]." - ".$arr[$k][2],
+                    "support_x" => $support_x,
+                    "support_xuy" => $support_xuy,
+                    "conf" => $nilai_conf,
+                );
+                array_push($apr_three, $array);
+                $array = array();
+            }
+        } else {
+            $apr_three = [];
+        }
+
+
+        $highest_apr = [];
+        $lowest_apr = [];
+        $lowest_string = [
+            'barang' => '',
+            'conf' => 100,
+        ];
+        $mat_string = [];
+        $mat_data = [];
+        foreach ($apr_two as $k => $v) {
+            if ($v['conf'] >= $request->min_conf) {
+                $highest_apr[] = $v;
+            }
+        }
+        foreach ($apr_three as $k => $v) {
+            if ($v['conf'] >= $request->min_conf) {
+                $highest_apr[] = $v;
+            }
+        }
+        foreach ($apr_two as $k => $v) {
+            if ($v['conf'] >= $request->min_conf) {
+                $lowest_apr[] = $v;
+            }
+        }
+        foreach ($highest_apr as $k => $val) {
+            foreach ($exploded_apr = preg_split('/ (-|=>) /', $val['item']) as $k => $v) {
+                !isset($mat_string[$v]) ? $mat_string[$v] = 'top_apr' : '';
+            }
+        }
+        foreach ($lowest_apr as $k => $v) {
+            if ($lowest_string['conf'] > $v['conf']) {
+                $raw_barang = preg_split('/ (-|=>) /', $v['item']);
+                $lowest_string['conf'] = $v['conf'];
+                $lowest_string['barang'] = $raw_barang[rand(0, (count($raw_barang)-1))];
+            }
+        }
+        if (!isset($mat_string[$lowest_string['barang']])) {
+            $mat_string[$lowest_string['barang']] = 'low_apr';
+        }
+        foreach ($data_barang as $k => $v) {
+            if (!isset($mat_string[$v->barang_nama])) {
+                $mat_string[$v->barang_nama] = 'common';
+            }
+        }
+        foreach ($mat_string as $k => $v) {
+            switch ($v) {
+                case 'top_apr':
+                    $level = 1;
+                    break;
+                case 'low_apr':
+                    $level = 2;
+                    break;
+                case 'common':
+                    $level = 3;
+                    break;
+                default:
+                    break;
+            }
+            $mat_data[] = [
+                'good_level' => $level,
+                'barang' => $k,
+                'type' => $v,
+            ];
+        }
+
+        return datatables()
+            ->of($mat_data)
+            ->with([
+                'TP' => $tp,
+                'TN' => $tn,
+                'FP' => $fp,
+                'FN' => $fn,
+            ])
+            ->toJson();
+    }
 }

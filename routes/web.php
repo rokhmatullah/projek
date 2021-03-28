@@ -75,6 +75,7 @@ Route::group(['middleware' => ['auth','web',]], function(){
     // Apriori - Conf
     Route::post('/penjualan/apriori/conf_dua', 'AprioriController@getTwoConf');
     Route::post('/penjualan/apriori/conf_tiga', 'AprioriController@getThreeConf');
+    Route::post('/penjualan/apriori/penempatan', 'AprioriController@processBarangApriori');
 
 
     // Pembelian
