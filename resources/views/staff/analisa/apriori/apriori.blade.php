@@ -869,6 +869,7 @@
             tTiga.ajax.reload();
             tConf.ajax.reload();
             tConfThree.ajax.reload();
+            tPenempatan.ajax.reload();
         });
         $("#input-tanggal_akhir").on("change.datetimepicker", function (e) {
             $('#input-tanggal_mulai').datetimepicker('maxDate', e.date);
@@ -877,6 +878,7 @@
             tTiga.ajax.reload();
             tConf.ajax.reload();
             tConfThree.ajax.reload();
+            tPenempatan.ajax.reload();
         });
 
         $("#input-min_support").on('change', function(e){
@@ -901,6 +903,7 @@
             tTiga.ajax.reload();
             tConf.ajax.reload();
             tConfThree.ajax.reload();
+            tPenempatan.ajax.reload();
         });
         $("#btn-save").click(function(){
             var formMethod = "PUT";
@@ -924,6 +927,7 @@
                     tTiga.ajax.reload();
                     tConf.ajax.reload();
                     tConfThree.ajax.reload();
+                    tPenempatan.ajax.reload();
                 },
                 error: function( jqXHR, textStatus, errorThrown ) {
                     console.log(jqXHR);
@@ -954,6 +958,7 @@
                     tTiga.ajax.reload();
                     tConf.ajax.reload();
                     tConfThree.ajax.reload();
+                    tPenempatan.ajax.reload();
                 },
                 error: function( jqXHR, textStatus, errorThrown ) {
                     console.log(jqXHR);
@@ -971,6 +976,7 @@
             tTiga.ajax.reload();
             tConf.ajax.reload();
             tConfThree.ajax.reload();
+            tPenempatan.ajax.reload();
         });
     });
 
